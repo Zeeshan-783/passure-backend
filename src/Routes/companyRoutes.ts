@@ -12,7 +12,6 @@ import {
 } from "../Controllers/companyController";
 import { protect } from "../Middleware/authMiddleware"; // ✅ Check case sensitivity
 import upload from "../Middleware/upload";
-// import upload from "../Middleware/multerMiddleware";
 
 router.post(
   "/uploadlogo",
