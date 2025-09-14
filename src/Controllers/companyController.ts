@@ -205,7 +205,7 @@ export const SendInvitation = async (
 
 // Backend - SendInvitation
 // const invitationUrl = `https://passure/join/${token}?company=${findCompany.companyName}`;
-const invitationUrl = `https://passure.com/join/${token}?company=${findCompany.companyName}`;
+const invitationUrl = `https://https://passuree.vercel.app//join/${token}?company=${findCompany.companyName}`;
 
     const message = `You have been invited to join ${findCompany.companyName}. Click the link below to accept the invitation:\n\n${invitationUrl}\n\nThis link will expire in 24 hours.`;
 
