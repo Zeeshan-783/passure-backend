@@ -1,7 +1,7 @@
 import express  from "express";
 import { protect } from "../Middleware/authMiddleware";
 import { GetUserProfileData, UpdateUserDetail ,GetUserProfileDetail,UpdateProfileImg} from "../Controllers/userController";
-import upload from "../Middleware/multerMiddleware";
+import upload from "../Middleware/upload";
 
 const router = express.Router()
 
