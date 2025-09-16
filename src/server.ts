@@ -21,6 +21,7 @@ app.use(express.json());
 connectDB();
 
 // Routes
+
 app.use("/api/auth", authRoutes);
 app.use("/api/company", companyRoutes);
 app.use("/api/password", passwordRoutes);
