@@ -75,47 +75,47 @@ export const uploadCompanyLogo = async (
   try {
     if (!req?.file) {
       res.status(400).json({ success: false, message: "No file uploaded" });
-      return;
+    } else {
+      const file = req?.file;
+      if (!req.user) {
+        res.status(401).json({ success: false, message: "Unauthorized" });
+      } else {
+        const userID = req.user.id;
+        const company = await Company.findOne({ creatorID: userID });
+        if (!company) {
+
+          //delete the file that uploaded by user
+          const filePath = file?.path;
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+
+            res.status(404).json({ success: false, message: "First register a company then upload logo" });
+          }
+        } else {
+          if (company.companyLogo) {
+            const previousLogo = company.companyLogo;
+            const filePath = previousLogo;
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+            }
+          }
+          company.companyLogo = file?.path || "";
+          await company.save();
+          res.status(200).json({
+            success: true,
+            message: "Company logo uploaded successfully",
+            company,
+          });
+        }
+      }
     }
-
-    if (!req.user) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
-    }
-
-    const userID = req.user.id;
-    const company = await Company.findOne({ creatorID: userID });
-
-    if (!company) {
-      res.status(404).json({
-        success: false,
-        message: "First register a company then upload logo",
-      });
-      return;
-    }
-
-    // File Cloudinary pe save hoti hai
-    const cloudinaryUrl = (req.file as any).path;
-
-    // Agar purana logo Cloudinary pe hai to optional delete karna
-    company.companyLogo = cloudinaryUrl;
-    await company.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Company logo uploaded successfully",
-      company,
-    });
   } catch (error) {
     console.log(error);
-    res.status(500).json({
-      success: false,
-      message: "Error uploading company logo",
-      error,
-    });
+    res
+      .status(500)
+      .json({ success: false, message: "Error uploading company logo", error });
   }
 };
-
 
 export const getCompany = async (
   req: RequestExtendsInterface,
