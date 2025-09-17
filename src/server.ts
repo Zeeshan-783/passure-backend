@@ -8,6 +8,7 @@ import passwordRoutes from "./Routes/passwordRoutes";
 import userRoutes from "./Routes/userRoutes";
 import swaggerUi from 'swagger-ui-express';
 import swaggerOutput from './swagger-output.json';
+import path from "node:path";
 
 dotenv.config();
 const app = express();
@@ -21,6 +22,10 @@ app.use(express.json());
 connectDB();
 
 // Routes
+app.get("/.well-known/apple-app-site-association", (req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  res.sendFile(path.join(process.cwd(), "public", "apple-app-site-association"));
+});
 
 app.use("/api/auth", authRoutes);
 app.use("/api/company", companyRoutes);
