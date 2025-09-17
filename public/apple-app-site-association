@@ -3,17 +3,8 @@
     "apps": [],
     "details": [
       {
-        "appIDs": [
-          "S8QB4VV633.com.example.deeplinkCookbook"
-        ],
-        "paths": [
-          "*"
-        ],
-        "components": [
-          {
-            "/": "/*"
-          }
-        ]
+        "appID": "S8QB4VV633.com.example.deeplinkCookbook",
+        "paths": [ "*" ]
       }
     ]
   },
