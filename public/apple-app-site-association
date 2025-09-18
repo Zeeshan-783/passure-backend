@@ -3,14 +3,14 @@
     "apps": [],
     "details": [
       {
-        "appID": "S8QB4VV633.com.example.deeplinkCookbook",
+        "appID": "S8QB4VV633.com.passure.app",
         "paths": [ "*" ]
       }
     ]
   },
   "webcredentials": {
     "apps": [
-      "S8QB4VV633.com.example.deeplinkCookbook"
+      "798U6TQ58H.com.passure.app"
     ]
   }
 }
