@@ -318,6 +318,108 @@ export const AcceptInvitation = async (
     });
   }
 };
+
+export const getInvitations = async (
+  req: RequestExtendsInterface,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const userID = req.user.id;
+    const user = await User.findById(userID);
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    const invitations = await Invitation.find({
+      email: user.email,
+      status: "pending",
+      expiresAt: { $gt: new Date() } // abhi valid ho
+    }).populate("companyID", "companyName");
+
+    res.status(200).json({
+      success: true,
+      invitations,
+    });
+  } catch (error) {
+    console.error("Error fetching invitations:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching invitations",
+      error: error.message,
+    });
+  }
+};
+export const RejectInvitation = async (
+  req: RequestExtendsInterface,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const { token } = req.body;
+    const userID = req.user.id;
+
+    console.log("Reject request body:", req.body);
+
+    // pehle just token se invitation find karo
+    const invitation = await Invitation.findOne({ token });
+    console.log("Found Invitation:", invitation);
+
+    if (!invitation) {
+      res.status(404).json({
+        success: false,
+        message: "Invitation not found",
+      });
+      return;
+    }
+
+    // user check karo
+    const user = await User.findById(userID);
+    if (!user || user.email !== invitation.email) {
+      res.status(403).json({
+        success: false,
+        message: "You are not authorized to reject this invitation",
+      });
+      return;
+    }
+
+    // agar already accepted/rejected hai
+    if (invitation.status !== "pending") {
+      res.status(400).json({
+        success: false,
+        message: `Invitation already ${invitation.status}`,
+      });
+      return;
+    }
+
+    // reject kar do
+    invitation.status = "rejected";
+    await invitation.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Invitation rejected successfully",
+    });
+  } catch (error) {
+    console.error("Error rejecting invitation:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error rejecting invitation",
+      error: error.message,
+    });
+  }
+};
+
+
 export const companyUsersFetch = async (
   req: RequestExtendsInterface,
   res: Response
