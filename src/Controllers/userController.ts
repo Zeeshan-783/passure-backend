@@ -45,10 +45,8 @@ export const GetUserProfileDetail = async (
       return;
     }
 
-const user = await User.findById(userId)
-  .populate("companyID", "companyName companyLogo companyUserIDs creatorID");
-  
-  if (!user) {
+    const user = await User.findById(userId);
+    if (!user) {
       res.status(404).json({ success: false, message: "User not found" });
       return;
     }
