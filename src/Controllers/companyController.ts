@@ -22,9 +22,11 @@ export const registerCompany = async (
 
     const companyname = companyName.trim().toLowerCase();
     const userID = req.user.id;
-    let existingCompany = await Company.findOne({
+
+    // 🔹 Check if user already has a company or name exists
+    const existingCompany = await Company.findOne({
       $or: [{ creatorID: userID }, { companyName: companyname }],
-    }).populate("creatorID");
+    });
     if (existingCompany) {
       res.status(400).json({
         success: false,
@@ -33,36 +35,45 @@ export const registerCompany = async (
             ? "Company name already exists"
             : "You already have a company",
       });
-    } else {
-      const previousCompanyID = await Company.findOne().sort({ companyID: -1 });
-      const nextCompanyID = previousCompanyID
-        ? previousCompanyID.companyID + 1
-        : 1;
-      const userId = await User.findOne({ _id: userID });
-      const UserLimit = process.env.COMPANY_USER_LIMIT || 10;
-      if (userId) {
-          const company = await Company.create({
-          companyName: companyname,
-          noOfUsers: noOfUsers,
-          companyID: nextCompanyID,
-          creatorID: userID,
-          companyUserIDs: [userId._id],
-          companyUserLimit: UserLimit,
-        });
-        res.status(201).json({
-          success: true,
-          message: "Company registered successfully",
-          company,
-        });
-      }
+      return;
     }
-    // Check if a company already exists for the user
-  
+
+    // 🔹 Get next companyID
+    const previousCompany = await Company.findOne().sort({ companyID: -1 });
+    const nextCompanyID = previousCompany ? previousCompany.companyID + 1 : 1;
+
+    // 🔹 Get user
+    const user = await User.findById(userID);
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    // 🔹 Create company
+    const UserLimit = process.env.COMPANY_USER_LIMIT || 10;
+    const company = await Company.create({
+      companyName: companyname,
+      noOfUsers: noOfUsers,
+      companyID: nextCompanyID,
+      creatorID: userID,
+      companyUserIDs: [user._id],
+      companyUserLimit: UserLimit,
+    });
+
+    // 🔹 Update user companyID
+   user.companyID = company._id as Types.ObjectId;
+await user.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Company registered successfully",
+      company,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: "Error handling company registration/update",
+      message: "Error handling company registration",
       error,
     });
   }
