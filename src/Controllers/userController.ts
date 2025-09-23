@@ -54,9 +54,11 @@ console.log("1 User Found");
 console.log("userID: ",user.userID);
     const userPasswords = await Passwords.find({ userID: user._id }) || [];
     console.log("2 userPasswords: ",userPasswords.length);
+          const company = await Company.findById(user.companyID);
+
 
     let companyPasswords: any[] = [];
-    let companyName = "";
+    let companyName = company.companyName;
     let totalEmployees = 0;
     let isCompanyOwner = false;
 
