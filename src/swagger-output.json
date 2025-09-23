@@ -355,7 +355,7 @@
         }
       }
     },
-    "/api/company/company/invitations": {
+    "/api/company/invitations": {
       "get": {
         "description": "",
         "parameters": [
@@ -374,8 +374,27 @@
         }
       }
     },
-    "/api/company/company/reject-invite": {
+    "/api/company/reject-invite": {
       "post": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/company/getcompanyuserdetails": {
+      "get": {
         "description": "",
         "parameters": [
           {

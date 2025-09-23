@@ -516,3 +516,64 @@ export const DeleteUserFromCompany = async(
     });
   }
 }
+export const getCompanyUsersDetails = async (
+  req: RequestExtendsInterface,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const userID = req.user.id;
+
+    // ✅ Pehle user find karo
+    const user = await User.findById(userID);
+    if (!user || !user.companyID) {
+      res.status(404).json({ success: false, message: "Company not found" });
+      return;
+    }
+
+    // ✅ Ab uski company find karo
+    const company = await Company.findById(user.companyID);
+    if (!company) {
+      res.status(404).json({ success: false, message: "Company not found" });
+      return;
+    }
+
+    if (!company.companyUserIDs || company.companyUserIDs.length === 0) {
+      res.status(200).json({ success: true, users: [] });
+      return;
+    }
+
+    // ✅ Users fetch karo
+    const users = await User.find({
+      _id: { $in: company.companyUserIDs }
+    }).select("_id fullname username profileImg email");
+
+    const userDetails = users.map((user) => ({
+      id: user._id,
+      fullname: user.fullname,
+      username: user.username,
+      email: user.email,
+      profileImg: user.profileImg,
+      companyId: company._id,
+    }));
+
+    res.status(200).json({
+      success: true,
+      users: userDetails,
+    });
+  } catch (error) {
+    console.error("Error fetching company user details:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching company user details",
+      error: error.message,
+    });
+  }
+};
+
+
+
