@@ -38,7 +38,6 @@ export const GetUserProfileDetail = async (
   res: Response
 ): Promise<void> => {
   try {
-    console.log('=====================================================')
     const userId = req.user?.id;
     if (!userId) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -50,53 +49,40 @@ export const GetUserProfileDetail = async (
       res.status(404).json({ success: false, message: "User not found" });
       return;
     }
-console.log("1 User Found");
-console.log("userID: ",user.userID);
-    const userPasswords = await Passwords.find({ userID: user._id }) || [];
-    console.log("2 userPasswords: ",userPasswords.length);
-          const company = await Company.findById(user.companyID);
 
+    const userPasswords = await Passwords.find({ userID: user._id }) || [];
 
     let companyPasswords: any[] = [];
-    let companyName = company.companyName;
+    let companyName = ""; // default empty string
     let totalEmployees = 0;
     let isCompanyOwner = false;
 
     if (user.companyID) {
-      console.log("3 companyID Found ");
-
-      companyPasswords = await Passwords.find({ companyPass: user.companyID }) || [];
-      console.log("3 companyPasswords: ",companyPasswords.length);
       const company = await Company.findById(user.companyID);
       if (company) {
-        console.log("4 company Found ");
-
         const isMember = company.companyUserIDs.some(
           (empId) => empId.toString() === userId.toString()
         );
 
         if (isMember) {
-          console.log("5 Company Member Found ");
-
-          companyName = company.companyName;
+          companyName = company.companyName || "";
           totalEmployees = company.companyUserIDs.length;
-
           if (company.creatorID.toString() === userId.toString()) {
-            console.log("5 Company Owner Found ");
-
             isCompanyOwner = true;
           }
+
+          companyPasswords = await Passwords.find({ companyPass: user.companyID }) || [];
         }
       }
     }
+
     const totalPasswords = [...userPasswords, ...companyPasswords];
     const uniquePasswordsMap = new Map<string, any>();
     for (const pwd of totalPasswords) {
       uniquePasswordsMap.set(pwd._id.toString(), pwd);
     }
-
     const uniquePasswords = Array.from(uniquePasswordsMap.values());
-    console.log("5 uniquePasswords: ",uniquePasswords.length);
+
     res.status(200).json({
       success: true,
       data: {
@@ -109,10 +95,11 @@ console.log("userID: ",user.userID);
       },
     });
   } catch (error) {
-    console.error("Error occurred in UpdateUserDetail:", error); // Log the error for debugging
+    console.error("Error occurred in GetUserProfileDetail:", error);
     res.status(500).json({ success: false, message: "An unexpected error occurred. Please try again later." });
   }
 };
+
 
 export const UpdateUserDetail = async (
   req: UserDetailInterface, // Ensure req.user is typed correctly
