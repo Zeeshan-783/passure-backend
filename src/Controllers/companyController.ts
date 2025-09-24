@@ -528,37 +528,35 @@ export const getCompanyUsersDetails = async (
 
     const userID = req.user.id;
 
-    // ✅ Pehle user find karo
+    // ✅ Current user fetch karo
     const user = await User.findById(userID);
     if (!user || !user.companyID) {
       res.status(404).json({ success: false, message: "Company not found" });
       return;
     }
 
-    // ✅ Ab uski company find karo
-    const company = await Company.findById(user.companyID);
+    const companyID = user.companyID;
+
+    // ✅ Company fetch karo (to get creatorID)
+    const company = await Company.findById(companyID);
     if (!company) {
       res.status(404).json({ success: false, message: "Company not found" });
       return;
     }
 
-    if (!company.companyUserIDs || company.companyUserIDs.length === 0) {
-      res.status(200).json({ success: true, users: [] });
-      return;
-    }
-
-    // ✅ Users fetch karo
+    // ✅ Saare users jinke companyID same hai aur creatorID ko skip karo
     const users = await User.find({
-      _id: { $in: company.companyUserIDs }
+      companyID: companyID,
+      _id: { $ne: company.creatorID } // creatorID skip
     }).select("_id fullname username profileImg email");
 
-    const userDetails = users.map((user) => ({
-      id: user._id,
-      fullname: user.fullname,
-      username: user.username,
-      email: user.email,
-      profileImg: user.profileImg,
-      companyId: company._id,
+    const userDetails = users.map((u) => ({
+      id: u._id,
+      fullname: u.fullname,
+      username: u.username,
+      email: u.email,
+      profileImg: u.profileImg,
+      companyId: companyID,
     }));
 
     res.status(200).json({
@@ -574,6 +572,8 @@ export const getCompanyUsersDetails = async (
     });
   }
 };
+
+
 
 
 
