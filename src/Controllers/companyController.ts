@@ -477,39 +477,45 @@ export const companyUsersFetch = async (
 export const DeleteUserFromCompany = async (req: RequestExtendsInterface, res: Response) => {
   try {
     const { userId } = req.body;
+    console.log("Delete request userId:", userId);
 
     if (!req.user) {
       res.status(401).json({ success: false, message: "Unauthorized" });
       return;
     }
 
-    // 👇 Yahan conversion karo
-    const objectUserId = new mongoose.Types.ObjectId(userId);
-
-    const findUser = await Company.findOne({
-      companyUserIDs: { $in: [objectUserId] }
-    });
-
-    if (!findUser) {
-      res.status(404).json({ success: false, message: "User not found in company" });
+    // ✅ Current logged-in user ka company find karo
+    const currentUser = await User.findById(req.user.id);
+    if (!currentUser || !currentUser.companyID) {
+      res.status(404).json({ success: false, message: "Company not found" });
       return;
     }
 
-    if (findUser.creatorID.toString() === userId.toString()) {
+    const company = await Company.findById(currentUser.companyID);
+    if (!company) {
+      res.status(404).json({ success: false, message: "Company not found" });
+      return;
+    }
+
+    if (company.creatorID.toString() === userId.toString()) {
       res.status(400).json({ success: false, message: "You cannot delete the creator of the company" });
       return;
     }
 
-    findUser.companyUserIDs = findUser.companyUserIDs.filter(
-      (user) => user.toString() !== userId.toString()
-    );
-
+    // ✅ User fetch karo aur uska companyID null kar do
     const user = await User.findById(userId);
-    if (user) {
-      user.companyID = null;
-      await findUser.save();
-      await user.save();
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
     }
+
+    if (user.companyID?.toString() !== company._id.toString()) {
+      res.status(400).json({ success: false, message: "User not in this company" });
+      return;
+    }
+
+    user.companyID = null;
+    await user.save();
 
     res.status(200).json({ success: true, message: "User deleted successfully" });
   } catch (error) {
@@ -521,6 +527,7 @@ export const DeleteUserFromCompany = async (req: RequestExtendsInterface, res: R
     });
   }
 };
+
 
 export const getCompanyUsersDetails = async (
   req: RequestExtendsInterface,
