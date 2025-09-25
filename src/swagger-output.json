@@ -355,7 +355,26 @@
         }
       }
     },
-    "/api/company/invitations": {
+    "/api/company/userinvitations": {
+      "get": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/company/getcompanyinvitations": {
       "get": {
         "description": "",
         "parameters": [

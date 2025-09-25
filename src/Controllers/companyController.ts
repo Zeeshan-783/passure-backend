@@ -151,94 +151,94 @@ export const getCompany = async (
       .json({ success: false, message: "Error getting company", error });
   }
 };
-export const SendInvitation = async (
-  req: RequestExtendsInterface,
-  res: Response
-): Promise<void> => {
-  try {
+// export const SendInvitation = async (
+//   req: RequestExtendsInterface,
+//   res: Response
+// ): Promise<void> => {
+//   try {
 
-    if (!req.user) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
-    }
+//     if (!req.user) {
+//       res.status(401).json({ success: false, message: "Unauthorized" });
+//       return;
+//     }
 
-    const userID = req.user.id;
-    const findCompany = await Company.findOne({ creatorID: userID });
+//     const userID = req.user.id;
+//     const findCompany = await Company.findOne({ creatorID: userID });
 
-    if (!findCompany) {
-      res.status(400).json({ success: false, message: "Company not found" });
-      return;
-    }
+//     if (!findCompany) {
+//       res.status(400).json({ success: false, message: "Company not found" });
+//       return;
+//     }
 
-    const checkUser = await User.findOne({ email: req.body.email });
+//     const checkUser = await User.findOne({ email: req.body.email });
 
-    if (!checkUser) {
-      res.status(400).json({
-        success: false,
-        message: "User needs to register before being invited",
-      });
-      return;
-    }
+//     if (!checkUser) {
+//       res.status(400).json({
+//         success: false,
+//         message: "User needs to register before being invited",
+//       });
+//       return;
+//     }
    
-    // Check if user is already part of the company
-    const isUserInCompany = findCompany?.companyUserIDs?.some(
-      (user) => user.toString() === checkUser._id.toString()
-    );
+//     // Check if user is already part of the company
+//     const isUserInCompany = findCompany?.companyUserIDs?.some(
+//       (user) => user.toString() === checkUser._id.toString()
+//     );
 
-    if (isUserInCompany) {
-      res.status(400).json({
-        success: false,
-        message: "User is already a member of this company",
-      });
-      return;
-    }
-    if(checkUser.companyID) {
-      res.status(400).json({
-        success: false,
-        message: "User is already part of another company",
-      });
-      return;
-    }
-    // Generate invitation token
-    const token = crypto.randomBytes(32).toString("hex");
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 24); // Expires in 24 hours
+//     if (isUserInCompany) {
+//       res.status(400).json({
+//         success: false,
+//         message: "User is already a member of this company",
+//       });
+//       return;
+//     }
+//     if(checkUser.companyID) {
+//       res.status(400).json({
+//         success: false,
+//         message: "User is already part of another company",
+//       });
+//       return;
+//     }
+//     // Generate invitation token
+//     const token = crypto.randomBytes(32).toString("hex");
+//     const expiresAt = new Date();
+//     expiresAt.setHours(expiresAt.getHours() + 24); // Expires in 24 hours
 
-    await Invitation.create({
-      email: req.body.email,
-      accessLevel: req.body.accessLevel,
-      companyID: findCompany._id,
-      token,
-      status: "pending",
-      expiresAt,
-      senderID: userID,
-    });
+//     await Invitation.create({
+//       email: req.body.email,
+//       accessLevel: req.body.accessLevel,
+//       companyID: findCompany._id,
+//       token,
+//       status: "pending",
+//       expiresAt,
+//       senderID: userID,
+//     });
 
-// Backend - SendInvitation
-// const invitationUrl = `https://passure/join/${token}?company=${findCompany.companyName}`;
-const invitationUrl = `https://https://passure.vercel.app/join/${token}?company=${findCompany.companyName}`;
+// // Backend - SendInvitation
+// // const invitationUrl = `https://passure/join/${token}?company=${findCompany.companyName}`;
+// const invitationUrl = `https://https://passure.vercel.app/join/${token}?company=${findCompany.companyName}`;
 
-    const message = `You have been invited to join ${findCompany.companyName}. Click the link below to accept the invitation:\n\n${invitationUrl}\n\nThis link will expire in 24 hours.`;
+//     const message = `You have been invited to join ${findCompany.companyName}. Click the link below to accept the invitation:\n\n${invitationUrl}\n\nThis link will expire in 24 hours.`;
 
-    await sendEmail({
-      to: req.body.email,
-      subject: `Invitation to join ${findCompany.companyName}`,
-      text: message,
-    });
-    console.log("Invitation sent to:", req.body.email);
-    res
-      .status(200)
-      .json({ success: true, message: "Invitation sent successfully" });
-  } catch (error) {
-    console.error(error.message);
-    res.status(500).json({
-      success: false,
-      message: "Error sending invitation",
-      error: error.message,
-    });
-    return;
-  }
-};
+//     await sendEmail({
+//       to: req.body.email,
+//       subject: `Invitation to join ${findCompany.companyName}`,
+//       text: message,
+//     });
+//     console.log("Invitation sent to:", req.body.email);
+//     res
+//       .status(200)
+//       .json({ success: true, message: "Invitation sent successfully" });
+//   } catch (error) {
+//     console.error(error.message);
+//     res.status(500).json({
+//       success: false,
+//       message: "Error sending invitation",
+//       error: error.message,
+//     });
+//     return;
+//   }
+// };
 
 export const AcceptInvitation = async (
   req: RequestExtendsInterface,
@@ -330,42 +330,42 @@ export const AcceptInvitation = async (
   }
 };
 
-export const getInvitations = async (
-  req: RequestExtendsInterface,
-  res: Response
-): Promise<void> => {
-  try {
-    if (!req.user) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
-    }
+// export const getInvitations = async (
+//   req: RequestExtendsInterface,
+//   res: Response
+// ): Promise<void> => {
+//   try {
+//     if (!req.user) {
+//       res.status(401).json({ success: false, message: "Unauthorized" });
+//       return;
+//     }
 
-    const userID = req.user.id;
-    const user = await User.findById(userID);
-    if (!user) {
-      res.status(404).json({ success: false, message: "User not found" });
-      return;
-    }
+//     const userID = req.user.id;
+//     const user = await User.findById(userID);
+//     if (!user) {
+//       res.status(404).json({ success: false, message: "User not found" });
+//       return;
+//     }
 
-    const invitations = await Invitation.find({
-      email: user.email,
-      status: "pending",
-      expiresAt: { $gt: new Date() } // abhi valid ho
-    }).populate("companyID", "companyName");
+//     const invitations = await Invitation.find({
+//       email: user.email,
+//       status: "pending",
+//       expiresAt: { $gt: new Date() } // abhi valid ho
+//     }).populate("companyID", "companyName");
 
-    res.status(200).json({
-      success: true,
-      invitations,
-    });
-  } catch (error) {
-    console.error("Error fetching invitations:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching invitations",
-      error: error.message,
-    });
-  }
-};
+//     res.status(200).json({
+//       success: true,
+//       invitations,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching invitations:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Error fetching invitations",
+//       error: error.message,
+//     });
+//   }
+// };
 export const RejectInvitation = async (
   req: RequestExtendsInterface,
   res: Response
@@ -474,17 +474,83 @@ export const companyUsersFetch = async (
 };
 
 
-export const DeleteUserFromCompany = async (req: RequestExtendsInterface, res: Response) => {
+// Send Invitation
+export const SendInvitation = async (req: RequestExtendsInterface, res: Response): Promise<void> => {
   try {
-    const { userId } = req.body;
-    console.log("Delete request userId:", userId);
-
     if (!req.user) {
       res.status(401).json({ success: false, message: "Unauthorized" });
       return;
     }
 
-    // ✅ Current logged-in user ka company find karo
+    const userID = req.user.id;
+    const findCompany = await Company.findOne({ creatorID: userID });
+
+    if (!findCompany) {
+      res.status(400).json({ success: false, message: "Company not found" });
+      return;
+    }
+
+    const checkUser = await User.findOne({ email: req.body.email });
+    if (!checkUser) {
+      res.status(400).json({ success: false, message: "User needs to register before being invited" });
+      return;
+    }
+
+    // Prevent multiple pending invites
+    const existingInvitation = await Invitation.findOne({
+      email: req.body.email,
+      companyID: findCompany._id,
+      status: "pending",
+      expiresAt: { $gt: new Date() },
+    });
+    if (existingInvitation) {
+      res.status(400).json({ success: false, message: "User already has a pending invitation" });
+      return;
+    }
+
+    // Generate invitation token
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24);
+
+    await Invitation.create({
+      email: req.body.email,
+      accessLevel: req.body.accessLevel,
+      companyID: findCompany._id,
+      token,
+      status: "pending",
+      expiresAt,
+      senderID: userID,
+    });
+
+    const invitationUrl = `https://passure.vercel.app/join/${token}?company=${findCompany.companyName}`;
+    const message = `You have been invited to join ${findCompany.companyName}. Click here:\n\n${invitationUrl}`;
+
+    await sendEmail({
+      to: req.body.email,
+      subject: `Invitation to join ${findCompany.companyName}`,
+      text: message,
+    });
+
+    res.status(200).json({ success: true, message: "Invitation sent successfully" });
+    return;
+
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ success: false, message: "Error sending invitation", error: error.message });
+    return;
+  }
+};
+
+// Delete user from company
+export const DeleteUserFromCompany = async (req: RequestExtendsInterface, res: Response): Promise<void> => {
+  try {
+    const { userId } = req.body;
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
     const currentUser = await User.findById(req.user.id);
     if (!currentUser || !currentUser.companyID) {
       res.status(404).json({ success: false, message: "Company not found" });
@@ -502,31 +568,86 @@ export const DeleteUserFromCompany = async (req: RequestExtendsInterface, res: R
       return;
     }
 
-    // ✅ User fetch karo aur uska companyID null kar do
     const user = await User.findById(userId);
-    if (!user) {
-      res.status(404).json({ success: false, message: "User not found" });
-      return;
-    }
-
-    if (user.companyID?.toString() !== company._id.toString()) {
+    if (!user || user.companyID?.toString() !== company._id.toString()) {
       res.status(400).json({ success: false, message: "User not in this company" });
       return;
     }
+
+    // Delete user's pending invitations for this company
+    await Invitation.deleteMany({ email: user.email, companyID: company._id, status: "pending" });
 
     user.companyID = null;
     await user.save();
 
     res.status(200).json({ success: true, message: "User deleted successfully" });
+    return;
+
   } catch (error) {
     console.error("error in delete user from company", error);
-    res.status(500).json({
-      success: false,
-      message: "Error in delete user from company",
-      error: error.message,
-    });
+    res.status(500).json({ success: false, message: "Error in delete user from company", error: error.message });
+    return;
   }
 };
+
+// Get all invitations sent by company (creator)
+export const getAllCompanyInvitations = async (req: RequestExtendsInterface, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const userID = req.user.id;
+    const company = await Company.findOne({ creatorID: userID });
+    if (!company) {
+      res.status(404).json({ success: false, message: "Company not found" });
+      return;
+    }
+
+    const invitations = await Invitation.find({ companyID: company._id }).populate("companyID", "companyName");
+
+    res.status(200).json({ success: true, invitations });
+    return;
+
+  } catch (error) {
+    console.error("Error fetching company invitations:", error);
+    res.status(500).json({ success: false, message: "Error fetching company invitations", error: error.message });
+    return;
+  }
+};
+
+// Get invitations for user
+export const getInvitations = async (req: RequestExtendsInterface, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const userID = req.user.id;
+    const user = await User.findById(userID);
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    const invitations = await Invitation.find({
+      email: user.email,
+      status: "pending",
+      expiresAt: { $gt: new Date() }
+    }).populate("companyID", "companyName");
+
+    res.status(200).json({ success: true, invitations });
+    return;
+
+  } catch (error) {
+    console.error("Error fetching invitations:", error);
+    res.status(500).json({ success: false, message: "Error fetching invitations", error: error.message });
+    return;
+  }
+};
+
 
 
 export const getCompanyUsersDetails = async (
