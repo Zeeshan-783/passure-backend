@@ -6,7 +6,7 @@ import fs from "fs";
 import crypto from "crypto";
 import Invitation from "../Models/Invitation";
 import { sendEmail } from "../utils/sendEmail";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 
 export const registerCompany = async (
   req: RequestExtendsInterface,
@@ -474,48 +474,54 @@ export const companyUsersFetch = async (
 };
 
 
-export const DeleteUserFromCompany = async(
-  req: RequestExtendsInterface,
-  response: Response
-)=>{
+export const DeleteUserFromCompany = async (req: RequestExtendsInterface, res: Response) => {
   try {
-    const {userId} = req.body;
+    const { userId } = req.body;
+
     if (!req.user) {
-      response.status(401).json({ success: false, message: "Unauthorized" });
+      res.status(401).json({ success: false, message: "Unauthorized" });
       return;
     }
+
+    // 👇 Yahan conversion karo
+    const objectUserId = new mongoose.Types.ObjectId(userId);
+
     const findUser = await Company.findOne({
-      companyUserIDs: { $in: [userId] }
+      companyUserIDs: { $in: [objectUserId] }
     });
-    if(!findUser) {
-      response.status(404).json({ success: false, message: "User not found in company" });
+
+    if (!findUser) {
+      res.status(404).json({ success: false, message: "User not found in company" });
       return;
     }
-    console.log("creator id", findUser.creatorID.toString())
-    console.log("user id", req.user.id.toString())
-      if(findUser.creatorID.toString() === userId.toString()) {
-        response.status(400).json({ success: false, message: "You cannot delete the creator of the company" });
-        return;
-      }
-      findUser.companyUserIDs = findUser.companyUserIDs.filter(
-        (user) => user.toString() !== userId.toString()
-      );
-      const user = await User.findById(userId);
-      if (user) {
-        user.companyID = null;
-        await findUser.save();
-        await user.save();
-      }
-      response.status(200).json({ success: true, message: "User deleted successfully" });
+
+    if (findUser.creatorID.toString() === userId.toString()) {
+      res.status(400).json({ success: false, message: "You cannot delete the creator of the company" });
+      return;
+    }
+
+    findUser.companyUserIDs = findUser.companyUserIDs.filter(
+      (user) => user.toString() !== userId.toString()
+    );
+
+    const user = await User.findById(userId);
+    if (user) {
+      user.companyID = null;
+      await findUser.save();
+      await user.save();
+    }
+
+    res.status(200).json({ success: true, message: "User deleted successfully" });
   } catch (error) {
-    console.log(error, "error in delete user from company")
-    response.status(500).json({
+    console.error("error in delete user from company", error);
+    res.status(500).json({
       success: false,
       message: "Error in delete user from company",
       error: error.message,
     });
   }
-}
+};
+
 export const getCompanyUsersDetails = async (
   req: RequestExtendsInterface,
   res: Response
