@@ -636,17 +636,27 @@ export const getInvitations = async (req: RequestExtendsInterface, res: Response
       email: user.email,
       status: "pending",
       expiresAt: { $gt: new Date() }
-    }).populate("companyID", "companyName");
+    })
+      .populate("companyID", "companyName")
+      .select("email accessLevel status expiresAt token companyID"); // ✅ token add
 
-    res.status(200).json({ success: true, invitations });
+    res.status(200).json({
+      success: true,
+      invitations,
+    });
     return;
 
   } catch (error) {
     console.error("Error fetching invitations:", error);
-    res.status(500).json({ success: false, message: "Error fetching invitations", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Error fetching invitations",
+      error: error.message,
+    });
     return;
   }
 };
+
 
 
 
