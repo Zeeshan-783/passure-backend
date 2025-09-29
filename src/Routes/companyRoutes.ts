@@ -32,8 +32,8 @@ router.get("/companyusersfetch/:id", protect, companyUsersFetch);
 router.post("/deleteuserfromcompany", protect, DeleteUserFromCompany);
 router.get("/userinvitations",protect , getInvitations);
 router.get("/getcompanyinvitations",protect , getAllCompanyInvitations),
-  router.get("/updatecompany",protect , updateCompany) ,
-  router.get("/deletecompany",protect , deleteCompany )
+  router.post("/updatecompany",protect , updateCompany) ,
+  router.post("/deletecompany",protect , deleteCompany )
 
 
   
