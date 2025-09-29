@@ -718,6 +718,91 @@ export const getCompanyUsersDetails = async (
 };
 
 
+// Update company
+export const updateCompany = async (
+  req: RequestExtendsInterface,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const userID = req.user.id;
+    const { companyName, noOfUsers } = req.body;
+
+    const company = await Company.findOne({ creatorID: userID });
+    if (!company) {
+      res.status(404).json({ success: false, message: "Company not found" });
+      return;
+    }
+
+    if (companyName) company.companyName = companyName.trim().toLowerCase();
+    if (noOfUsers) company.noOfUsers = noOfUsers;
+
+    await company.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Company updated successfully",
+      company,
+    });
+  } catch (error) {
+    console.error("Error updating company:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating company",
+      error: error.message,
+    });
+  }
+};
+
+
+// Delete company
+export const deleteCompany = async (
+  req: RequestExtendsInterface,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const userID = req.user.id;
+
+    const company = await Company.findOne({ creatorID: userID });
+    if (!company) {
+      res.status(404).json({ success: false, message: "Company not found" });
+      return;
+    }
+
+    // 🔹 Company ke saare users update karo (companyID null)
+    await User.updateMany(
+      { companyID: company._id },
+      { $set: { companyID: null } }
+    );
+
+    // 🔹 Company ki invitations delete karo
+    await Invitation.deleteMany({ companyID: company._id });
+
+    // 🔹 Company ko delete karo
+    await Company.findByIdAndDelete(company._id);
+
+    res.status(200).json({
+      success: true,
+      message: "Company deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting company:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error deleting company",
+      error: error.message,
+    });
+  }
+};
 
 
 
