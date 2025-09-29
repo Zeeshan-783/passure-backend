@@ -11,7 +11,9 @@ import {
   getInvitations,
   RejectInvitation,
 getCompanyUsersDetails,
-getAllCompanyInvitations
+getAllCompanyInvitations,
+updateCompany,
+deleteCompany
 } from "../Controllers/companyController";
 import { protect } from "../Middleware/authMiddleware"; // ✅ Check case sensitivity
 import upload from "../Middleware/upload";
@@ -29,9 +31,12 @@ router.post("/acceptinvitation", protect, AcceptInvitation);
 router.get("/companyusersfetch/:id", protect, companyUsersFetch);
 router.post("/deleteuserfromcompany", protect, DeleteUserFromCompany);
 router.get("/userinvitations",protect , getInvitations);
-router.get("/getcompanyinvitations",protect , getAllCompanyInvitations
+router.get("/getcompanyinvitations",protect , getAllCompanyInvitations),
+  router.get("/updatecompany",protect , updateCompany) ,
+  router.get("/deletecompany",protect , deleteCompany )
+
+
   
-);
 
 router.post("/reject-invite",protect , RejectInvitation);
 router.get("/getcompanyuserdetails",protect , getCompanyUsersDetails);
