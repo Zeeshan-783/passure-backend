@@ -394,7 +394,7 @@
       }
     },
     "/api/company/updatecompany": {
-      "get": {
+      "post": {
         "description": "",
         "parameters": [
           {
@@ -413,7 +413,7 @@
       }
     },
     "/api/company/deletecompany": {
-      "get": {
+      "post": {
         "description": "",
         "parameters": [
           {
