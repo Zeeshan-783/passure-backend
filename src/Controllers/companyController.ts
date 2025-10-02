@@ -7,6 +7,8 @@ import crypto from "crypto";
 import Invitation from "../Models/Invitation";
 import { sendEmail } from "../utils/sendEmail";
 import mongoose, { Types } from "mongoose";
+import Passwords from "../Models/Passwords"; // make sure correct model import ho
+
 
 export const registerCompany = async (
   req: RequestExtendsInterface,
@@ -61,8 +63,8 @@ export const registerCompany = async (
     });
 
     // 🔹 Update user companyID
-   user.companyID = company._id as Types.ObjectId;
-await user.save();
+    user.companyID = company._id as Types.ObjectId;
+    await user.save();
 
     res.status(201).json({
       success: true,
@@ -179,7 +181,7 @@ export const getCompany = async (
 //       });
 //       return;
 //     }
-   
+
 //     // Check if user is already part of the company
 //     const isUserInCompany = findCompany?.companyUserIDs?.some(
 //       (user) => user.toString() === checkUser._id.toString()
@@ -314,7 +316,7 @@ export const AcceptInvitation = async (
         .status(200)
         .json({ success: true, message: "Invitation accepted successfully" }); // Update invitation status
     } else {
-      
+
       res
         .status(200)
         .json({ success: false, message: "Already member of this company" });
@@ -439,33 +441,33 @@ export const companyUsersFetch = async (
     const { id } = req.params;
 
     if (!req.user) {
-       res.status(401).json({ success: false, message: "Unauthorized" });
-       return
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return
     }
 
     const company = await Company.findById(id);
 
     if (!company) {
-       res.status(404).json({ success: false, message: "Company not found" });
-       return
+      res.status(404).json({ success: false, message: "Company not found" });
+      return
     }
 
     if (!company.companyUserIDs || company.companyUserIDs.length === 0) {
-       res.status(200).json({ success: true, users: [] });
-       return
+      res.status(200).json({ success: true, users: [] });
+      return
     }
     const users = await User.find({
       _id: { $in: company.companyUserIDs }
     }).select('fullname username profileImg ');
-     res.status(200).json({
+    res.status(200).json({
       success: true,
       users,
     });
-    return    
+    return
 
   } catch (error) {
     console.error("Error fetching company users:", error);
-     res.status(500).json({
+    res.status(500).json({
       success: false,
       message: "Error fetching company users",
       error: error.message,
@@ -760,6 +762,7 @@ export const updateCompany = async (
 
 
 // Delete company
+
 export const deleteCompany = async (
   req: RequestExtendsInterface,
   res: Response
@@ -771,28 +774,30 @@ export const deleteCompany = async (
     }
 
     const userID = req.user.id;
-
     const company = await Company.findOne({ creatorID: userID });
     if (!company) {
       res.status(404).json({ success: false, message: "Company not found" });
       return;
     }
 
-    // 🔹 Company ke saare users update karo (companyID null)
+    // 🔹 Update users (companyID null) – users ko delete nahi karna
     await User.updateMany(
       { companyID: company._id },
       { $set: { companyID: null } }
     );
 
-    // 🔹 Company ki invitations delete karo
+    // 🔹 Delete passwords linked to this company
+    await Passwords.deleteMany({ companyPass: company._id });
+
+    // 🔹 Delete invitations
     await Invitation.deleteMany({ companyID: company._id });
 
-    // 🔹 Company ko delete karo
+    // 🔹 Delete company
     await Company.findByIdAndDelete(company._id);
 
     res.status(200).json({
       success: true,
-      message: "Company deleted successfully",
+      message: "Company and its passwords deleted successfully",
     });
   } catch (error) {
     console.error("Error deleting company:", error);
@@ -803,6 +808,7 @@ export const deleteCompany = async (
     });
   }
 };
+
 
 
 
