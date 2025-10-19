@@ -12,15 +12,21 @@ passport.use(
     async (accessToken, refreshToken, profile, done) => {
       try {
         let user = await User.findOne({ googleId: profile.id });
+
         if (!user) {
+          // If user doesn't exist, create one
           user = await User.create({
             googleId: profile.id,
             username: profile.displayName,
-            email: profile.emails[0].value,
+            email: profile.emails?.[0]?.value || "",
+            provider: "google",
+            profileImg: profile.photos?.[0]?.value || null,
           });
         }
+
         done(null, user);
       } catch (err) {
+        console.error("Google Strategy Error:", err);
         done(err, null);
       }
     }
