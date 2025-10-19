@@ -17,6 +17,7 @@
   "description": "",
   "dependencies": {
     "@types/nodemailer": "^6.4.17",
+    "axios": "^1.12.2",
     "bcryptjs": "^3.0.2",
     "body-parser": "^2.2.0",
     "cloudinary": "^1.41.3",
