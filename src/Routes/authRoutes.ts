@@ -22,7 +22,10 @@ const generateTokenAndRedirect = (req: any, res: any) => {
 };
 
 // Google OAuth routes
-router.get("/google", passport.authenticate("google"));
+router.get(
+  "/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
 
 router.get(
   "/google/callback",
