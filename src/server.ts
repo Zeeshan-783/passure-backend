@@ -9,6 +9,11 @@ import userRoutes from "./Routes/userRoutes";
 import swaggerUi from 'swagger-ui-express';
 import swaggerOutput from './swagger-output.json';
 import path from "node:path";
+import passport from "passport";
+
+
+import "./Middleware/authGoogle";
+import "./Middleware/authGithub";
 
 dotenv.config();
 const app = express();
@@ -17,6 +22,8 @@ app.use("/uploads", express.static("uploads"));
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(passport.initialize());  // <-- Passport middleware initialize
+
 
 // Connect to MongoDB
 connectDB();

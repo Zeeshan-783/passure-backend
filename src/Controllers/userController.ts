@@ -102,7 +102,7 @@ export const GetUserProfileDetail = async (
 
 
 export const UpdateUserDetail = async (
-  req: UserDetailInterface, // Ensure req.user is typed correctly
+  req: RequestExtendsInterface,
   res: Response
 ): Promise<void> => {
   try {
