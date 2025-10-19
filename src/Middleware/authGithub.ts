@@ -8,7 +8,7 @@ passport.use(
     {
       clientID: process.env.GITHUB_CLIENT_ID || "",
       clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
-      callbackURL: process.env.GITHUB_CALLBACK_URL || "/api/auth/github/callback",
+      callbackURL: "https://passure.vercel.app/api/auth/github/callback",
     },
     async (
       accessToken: string,
