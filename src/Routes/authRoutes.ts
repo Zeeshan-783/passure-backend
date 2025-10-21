@@ -18,7 +18,7 @@ const generateTokenAndRedirect = (req: any, res: any) => {
   });
 
   // Redirect to Flutter app deep link with token
-  res.redirect(`myflutterapp://login?token=${token}`);
+  res.redirect(`passure://login?token=${token}`);
 };
 
 // Google OAuth routes
