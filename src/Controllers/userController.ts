@@ -210,7 +210,7 @@ export const UpdateProfileImg = async (
   }
 };
 
-export const updatePlayerId = async (req:RequestExtendsInterface , res:Response ): Promise<void> => {
+export const updatePlayerId = async (req: RequestExtendsInterface, res: Response): Promise<void> => {
   try {
     const { playerId } = req.body;
     if (!req.user) {
@@ -223,15 +223,26 @@ export const updatePlayerId = async (req:RequestExtendsInterface , res:Response 
       res.status(404).json({ success: false, message: "User not found" });
       return;
     }
-    user.oneSignalPlayerId = playerId;
-    await user.save();
+
+    // Initialize if undefined
+    if (!Array.isArray(user.oneSignalPlayerIds)) {
+      user.oneSignalPlayerIds = [];
+    }
+
+    // Avoid duplicates
+    if (!user.oneSignalPlayerIds.includes(playerId)) {
+      user.oneSignalPlayerIds.push(playerId);
+      await user.save();
+    }
 
     res.status(200).json({
       success: true,
-      message: "OneSignal Player ID updated successfully",
+      message: "OneSignal Player ID added successfully",
+      playerIds: user.oneSignalPlayerIds,
     });
   } catch (error) {
     console.error("Error updating OneSignal Player ID:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+

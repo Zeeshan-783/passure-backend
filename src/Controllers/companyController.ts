@@ -243,6 +243,9 @@ export const getCompany = async (
 //   }
 // };
 
+/* ----------------------------------------------------
+   ✅ Accept Invitation
+---------------------------------------------------- */
 export const AcceptInvitation = async (req: RequestExtendsInterface, res: Response): Promise<void> => {
   try {
     if (!req.user) {
@@ -253,11 +256,7 @@ export const AcceptInvitation = async (req: RequestExtendsInterface, res: Respon
     const { token } = req.body;
     const userID = req.user.id;
 
-    const findInvitation = await Invitation.findOne({
-      token,
-      expiresAt: { $gt: new Date() },
-    });
-
+    const findInvitation = await Invitation.findOne({ token, expiresAt: { $gt: new Date() } });
     if (!findInvitation || findInvitation.status !== "pending") {
       res.status(400).json({ success: false, message: "Invitation expired or invalid" });
       return;
@@ -286,11 +285,11 @@ export const AcceptInvitation = async (req: RequestExtendsInterface, res: Respon
       user.companyID = findCompany._id as Types.ObjectId;
       await user.save();
 
-      // Notify sender
+      // ✅ Notify sender on all devices
       const sender = await User.findById(findInvitation.senderID);
-      if (sender?.oneSignalPlayerId) {
+      if (sender?.oneSignalPlayerIds?.length) {
         await sendOneSignalNotification({
-          include_player_ids: [sender.oneSignalPlayerId.toString()],
+          include_player_ids: sender.oneSignalPlayerIds.map(String),
           heading: "Invitation Accepted",
           content: `${user.fullname} accepted your invitation`,
           data: { token, type: "invite_accepted" },
@@ -307,6 +306,7 @@ export const AcceptInvitation = async (req: RequestExtendsInterface, res: Respon
     res.status(500).json({ success: false, message: "Error accepting invitation", error: error.message });
   }
 };
+
 
 // export const getInvitations = async (
 //   req: RequestExtendsInterface,
@@ -344,6 +344,9 @@ export const AcceptInvitation = async (req: RequestExtendsInterface, res: Respon
 //     });
 //   }
 // };
+/* ----------------------------------------------------
+   ✅ Reject Invitation
+---------------------------------------------------- */
 export const RejectInvitation = async (req: RequestExtendsInterface, res: Response): Promise<void> => {
   try {
     if (!req.user) {
@@ -369,11 +372,11 @@ export const RejectInvitation = async (req: RequestExtendsInterface, res: Respon
     invitation.status = "rejected";
     await invitation.save();
 
-    // Notify sender
+    // ✅ Notify sender on all devices
     const sender = await User.findById(invitation.senderID);
-    if (sender?.oneSignalPlayerId) {
+    if (sender?.oneSignalPlayerIds?.length) {
       await sendOneSignalNotification({
-        include_player_ids: [sender.oneSignalPlayerId.toString()],
+        include_player_ids: sender.oneSignalPlayerIds.map(String),
         heading: "Invitation Rejected",
         content: `${user.fullname} rejected your invitation`,
         data: { token, type: "invite_rejected" },
@@ -433,7 +436,9 @@ export const companyUsersFetch = async (
 };
 
 
-// Send Invitation
+/* ----------------------------------------------------
+   ✅ Send Invitation (with OneSignal multi-device support)
+---------------------------------------------------- */
 export const SendInvitation = async (req: RequestExtendsInterface, res: Response): Promise<void> => {
   try {
     if (!req.user) {
@@ -459,7 +464,6 @@ export const SendInvitation = async (req: RequestExtendsInterface, res: Response
       return;
     }
 
-    // Prevent multiple pending invites
     const existingInvitation = await Invitation.findOne({
       email: req.body.email,
       companyID: findCompany._id,
@@ -471,12 +475,11 @@ export const SendInvitation = async (req: RequestExtendsInterface, res: Response
       return;
     }
 
-    // Generate invitation token
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24);
 
-    const newInvitation = await Invitation.create({
+    await Invitation.create({
       email: req.body.email,
       accessLevel: req.body.accessLevel,
       companyID: findCompany._id,
@@ -486,7 +489,6 @@ export const SendInvitation = async (req: RequestExtendsInterface, res: Response
       senderID: inviter._id,
     });
 
-    // Send Email
     const invitationUrl = `https://passure.vercel.app/join/${token}?company=${findCompany.companyName}`;
     const message = `You have been invited to join ${findCompany.companyName}. Click here:\n\n${invitationUrl}`;
 
@@ -496,10 +498,10 @@ export const SendInvitation = async (req: RequestExtendsInterface, res: Response
       text: message,
     });
 
-    // Send OneSignal Notification to receiver
-    if (checkUser.oneSignalPlayerId) {
+    // ✅ Send notification to all of the receiver's devices
+    if (checkUser.oneSignalPlayerIds?.length) {
       await sendOneSignalNotification({
-        include_player_ids: [checkUser.oneSignalPlayerId.toString()],
+        include_player_ids: checkUser.oneSignalPlayerIds.map(String),
         heading: `Invitation to join ${findCompany.companyName}`,
         content: `${inviter.fullname} invited you to join ${findCompany.companyName}`,
         url: `passure://invite?token=${token}`,
