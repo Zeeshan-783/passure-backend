@@ -172,6 +172,7 @@ export const UpdateUserDetail = async (
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
 export const UpdateProfileImg = async (
   req: RequestExtendsInterface,
   res: Response
@@ -206,5 +207,31 @@ export const UpdateProfileImg = async (
       success: true,
       message: "Internal server error",
     });
+  }
+};
+
+export const updatePlayerId = async (req:RequestExtendsInterface , res:Response ): Promise<void> => {
+  try {
+    const { playerId } = req.body;
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+    user.oneSignalPlayerId = playerId;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "OneSignal Player ID updated successfully",
+    });
+  } catch (error) {
+    console.error("Error updating OneSignal Player ID:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 };

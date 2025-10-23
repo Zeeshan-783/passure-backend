@@ -10,6 +10,7 @@ export interface IUser extends Document {
   companyID?: Types.ObjectId | null;
   googleId?: string; // added for Google OAuth
   provider?: string; // "local" | "google" | "github"
+  oneSignalPlayerId?: Types.ObjectId | null;       
 }
 
 const UserSchema: Schema = new Schema(
@@ -27,6 +28,7 @@ const UserSchema: Schema = new Schema(
     },
     googleId: { type: String, unique: true, sparse: true },
     provider: { type: String, default: "local" },
+    oneSignalPlayerId: {type:String, default: null}
   },
   { timestamps: true }
 );

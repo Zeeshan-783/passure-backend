@@ -8,6 +8,7 @@ import Invitation from "../Models/Invitation";
 import { sendEmail } from "../utils/sendEmail";
 import mongoose, { Types } from "mongoose";
 import Passwords from "../Models/Passwords"; // make sure correct model import ho
+import { sendOneSignalNotification } from "../utils/oneSignalHelper";
 
 
 export const registerCompany = async (
@@ -242,12 +243,8 @@ export const getCompany = async (
 //   }
 // };
 
-export const AcceptInvitation = async (
-  req: RequestExtendsInterface,
-  res: Response
-): Promise<void> => {
+export const AcceptInvitation = async (req: RequestExtendsInterface, res: Response): Promise<void> => {
   try {
-
     if (!req.user) {
       res.status(401).json({ success: false, message: "Unauthorized" });
       return;
@@ -256,79 +253,58 @@ export const AcceptInvitation = async (
     const { token } = req.body;
     const userID = req.user.id;
 
-    // Find the invitation and ensure it's still valid
     const findInvitation = await Invitation.findOne({
-      token: token,
+      token,
       expiresAt: { $gt: new Date() },
     });
 
-    if (!findInvitation) {
-      res.status(400).json({
-        success: false,
-        message: "Invitation Expired or Invalid Request",
-      });
+    if (!findInvitation || findInvitation.status !== "pending") {
+      res.status(400).json({ success: false, message: "Invitation expired or invalid" });
       return;
     }
 
-    // Find user accepting the invitation
     const user: IUser | null = await User.findById(userID);
-    if (!user) {
-      res.status(404).json({ success: false, message: "User not found" });
-      return;
-    }
-    // Ensure the user is the invited person
-    if (user.email !== findInvitation.email) {
-      res.status(403).json({
-        success: false,
-        message: "You are not authorized to accept this invitation",
-      });
+    if (!user || user.email !== findInvitation.email) {
+      res.status(403).json({ success: false, message: "Not authorized to accept this invitation" });
       return;
     }
 
-    // Add the user to the company
     const findCompany = await Company.findById(findInvitation.companyID);
     if (!findCompany) {
-      res.status(404).json({
-        success: false,
-        message: "Company not found",
-      });
+      res.status(404).json({ success: false, message: "Company not found" });
       return;
     }
 
-    // Ensure companyUserIDs is initialized
-    if (!findCompany.companyUserIDs) {
-      findCompany.companyUserIDs = [];
-    }
-
-    // Prevent duplicate entries
-    const userId = new Types.ObjectId(user._id.toString());
-
-    if (!findCompany.companyUserIDs.includes(userId)) {
-      findCompany.companyUserIDs.push(userId);
+    const userIdObj = new Types.ObjectId(user._id.toString());
+    if (!findCompany.companyUserIDs.includes(userIdObj)) {
+      findCompany.companyUserIDs.push(userIdObj);
       await findCompany.save();
-      // Update invitation status
+
       findInvitation.status = "accepted";
       await findInvitation.save();
 
-      user.companyID = new Types.ObjectId(findCompany._id as Types.ObjectId);
+      user.companyID = findCompany._id as Types.ObjectId;
       await user.save();
-      res
-        .status(200)
-        .json({ success: true, message: "Invitation accepted successfully" }); // Update invitation status
-    } else {
 
-      res
-        .status(200)
-        .json({ success: false, message: "Already member of this company" });
-      return;
+      // Notify sender
+      const sender = await User.findById(findInvitation.senderID);
+      if (sender?.oneSignalPlayerId) {
+        await sendOneSignalNotification({
+          include_player_ids: [sender.oneSignalPlayerId.toString()],
+          heading: "Invitation Accepted",
+          content: `${user.fullname} accepted your invitation`,
+          data: { token, type: "invite_accepted" },
+          url: `passure://company/${findCompany._id}`,
+        });
+      }
+
+      res.status(200).json({ success: true, message: "Invitation accepted successfully" });
+    } else {
+      res.status(400).json({ success: false, message: "Already member of this company" });
     }
   } catch (error) {
-    console.error(error.message);
-    res.status(500).json({
-      success: false,
-      message: "Error accepting invitation",
-      error: error.message,
-    });
+    console.error(error);
+    res.status(500).json({ success: false, message: "Error accepting invitation", error: error.message });
   }
 };
 
@@ -368,10 +344,7 @@ export const AcceptInvitation = async (
 //     });
 //   }
 // };
-export const RejectInvitation = async (
-  req: RequestExtendsInterface,
-  res: Response
-): Promise<void> => {
+export const RejectInvitation = async (req: RequestExtendsInterface, res: Response): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -381,56 +354,40 @@ export const RejectInvitation = async (
     const { token } = req.body;
     const userID = req.user.id;
 
-    console.log("Reject request body:", req.body);
-
-    // pehle just token se invitation find karo
     const invitation = await Invitation.findOne({ token });
-    console.log("Found Invitation:", invitation);
-
-    if (!invitation) {
-      res.status(404).json({
-        success: false,
-        message: "Invitation not found",
-      });
+    if (!invitation || invitation.status !== "pending") {
+      res.status(400).json({ success: false, message: "Invitation not found or already handled" });
       return;
     }
 
-    // user check karo
     const user = await User.findById(userID);
     if (!user || user.email !== invitation.email) {
-      res.status(403).json({
-        success: false,
-        message: "You are not authorized to reject this invitation",
-      });
+      res.status(403).json({ success: false, message: "Not authorized to reject this invitation" });
       return;
     }
 
-    // agar already accepted/rejected hai
-    if (invitation.status !== "pending") {
-      res.status(400).json({
-        success: false,
-        message: `Invitation already ${invitation.status}`,
-      });
-      return;
-    }
-
-    // reject kar do
     invitation.status = "rejected";
     await invitation.save();
 
-    res.status(200).json({
-      success: true,
-      message: "Invitation rejected successfully",
-    });
+    // Notify sender
+    const sender = await User.findById(invitation.senderID);
+    if (sender?.oneSignalPlayerId) {
+      await sendOneSignalNotification({
+        include_player_ids: [sender.oneSignalPlayerId.toString()],
+        heading: "Invitation Rejected",
+        content: `${user.fullname} rejected your invitation`,
+        data: { token, type: "invite_rejected" },
+        url: `passure://company/${invitation.companyID}`,
+      });
+    }
+
+    res.status(200).json({ success: true, message: "Invitation rejected successfully" });
   } catch (error) {
-    console.error("Error rejecting invitation:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error rejecting invitation",
-      error: error.message,
-    });
+    console.error(error);
+    res.status(500).json({ success: false, message: "Error rejecting invitation", error: error.message });
   }
 };
+
 
 
 export const companyUsersFetch = async (
@@ -484,9 +441,13 @@ export const SendInvitation = async (req: RequestExtendsInterface, res: Response
       return;
     }
 
-    const userID = req.user.id;
-    const findCompany = await Company.findOne({ creatorID: userID });
+    const inviter = await User.findById(req.user.id);
+    if (!inviter) {
+      res.status(404).json({ success: false, message: "Inviter not found" });
+      return;
+    }
 
+    const findCompany = await Company.findOne({ creatorID: inviter._id });
     if (!findCompany) {
       res.status(400).json({ success: false, message: "Company not found" });
       return;
@@ -515,16 +476,17 @@ export const SendInvitation = async (req: RequestExtendsInterface, res: Response
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24);
 
-    await Invitation.create({
+    const newInvitation = await Invitation.create({
       email: req.body.email,
       accessLevel: req.body.accessLevel,
       companyID: findCompany._id,
       token,
       status: "pending",
       expiresAt,
-      senderID: userID,
+      senderID: inviter._id,
     });
 
+    // Send Email
     const invitationUrl = `https://passure.vercel.app/join/${token}?company=${findCompany.companyName}`;
     const message = `You have been invited to join ${findCompany.companyName}. Click here:\n\n${invitationUrl}`;
 
@@ -534,15 +496,28 @@ export const SendInvitation = async (req: RequestExtendsInterface, res: Response
       text: message,
     });
 
-    res.status(200).json({ success: true, message: "Invitation sent successfully" });
-    return;
+    // Send OneSignal Notification to receiver
+    if (checkUser.oneSignalPlayerId) {
+      await sendOneSignalNotification({
+        include_player_ids: [checkUser.oneSignalPlayerId.toString()],
+        heading: `Invitation to join ${findCompany.companyName}`,
+        content: `${inviter.fullname} invited you to join ${findCompany.companyName}`,
+        url: `passure://invite?token=${token}`,
+        data: { token, companyId: findCompany._id.toString() },
+        buttons: [
+          { id: "accept", text: "Accept" },
+          { id: "reject", text: "Reject" },
+        ],
+      });
+    }
 
+    res.status(200).json({ success: true, message: "Invitation sent successfully" });
   } catch (error) {
-    console.error(error.message);
+    console.error(error);
     res.status(500).json({ success: false, message: "Error sending invitation", error: error.message });
-    return;
   }
 };
+
 
 // Delete user from company
 export const DeleteUserFromCompany = async (req: RequestExtendsInterface, res: Response): Promise<void> => {

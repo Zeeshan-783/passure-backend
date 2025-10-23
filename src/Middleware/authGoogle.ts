@@ -1,6 +1,6 @@
 import { Strategy as GoogleStrategy, Profile } from "passport-google-oauth20";
 import passport from "passport";
-import User from "../Models/User.js"; // adjust .js if using ESM
+import User from "../Models/User";
 
 passport.use(
   new GoogleStrategy(
