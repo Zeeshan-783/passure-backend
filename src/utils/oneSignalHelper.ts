@@ -51,6 +51,9 @@ export const sendOneSignalNotification = async (data: NotificationData) => {
   const playerIds = Array.isArray(data.include_player_ids) ? data.include_player_ids : [];
   if (playerIds.length === 0) return { successes: [], failures: [] };
 
+  // Send to all provided player IDs without pre-checking subscription status.
+  const subscribedIds = playerIds;
+
   const basePayload: any = {
     headings: { en: data.heading },
     contents: { en: data.content },
@@ -59,7 +62,7 @@ export const sendOneSignalNotification = async (data: NotificationData) => {
     buttons: data.buttons,
   };
 
-  const promises = playerIds.map((pid) =>
+  const promises = subscribedIds.map((pid) =>
     (async () => {
       try {
         const payload = { ...basePayload, include_player_ids: [pid] };
