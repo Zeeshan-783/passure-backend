@@ -4,7 +4,6 @@ import { Client as OneSignalClient } from "onesignal-node";
 // Defensive OneSignal client setup for onesignal-node v3
 const APP_ID = process.env.ONESIGNAL_APP_ID;
 const REST_KEY = process.env.ONESIGNAL_REST_KEY;
-const USER_AUTH_KEY = process.env.ONESIGNAL_USER_AUTH_KEY; // optional
 
 let client: any | null = null;
 const getClient = () => {
@@ -46,14 +45,45 @@ export const sendOneSignalNotification = async (data: NotificationData) => {
     data: data.data,
     buttons: data.buttons,
   };
+  // If include_player_ids has multiple entries, send per-player and don't let one failure block others.
+  const playerIds = Array.isArray(data.include_player_ids) ? data.include_player_ids : [];
+  if (playerIds.length === 0) return { successes: [], failures: [] };
 
-  try {
-    const response = await c.createNotification(notification);
-    // response may include a body property depending on library internals
-    console.log("OneSignal response:", (response && response.body) || response);
-    return response;
-  } catch (error: any) {
-    console.error("OneSignal Error:", (error && error.body) || error);
-    throw error;
+  const basePayload: any = {
+    headings: { en: data.heading },
+    contents: { en: data.content },
+    url: data.url,
+    data: data.data,
+    buttons: data.buttons,
+  };
+
+  const promises = playerIds.map((pid) =>
+    (async () => {
+      try {
+        const payload = { ...basePayload, include_player_ids: [pid] };
+        const resp = await c.createNotification(payload);
+        return { id: pid, success: true, response: (resp && resp.body) || resp };
+      } catch (err: any) {
+        return { id: pid, success: false, error: (err && err.body) || err };
+      }
+    })()
+  );
+
+  const settled = await Promise.allSettled(promises);
+  const successes: any[] = [];
+  const failures: any[] = [];
+
+  for (const s of settled) {
+    if (s.status === "fulfilled") {
+      const val = s.value;
+      if (val.success) successes.push(val);
+      else failures.push(val);
+    } else {
+      failures.push({ id: null, success: false, error: s.reason });
+    }
   }
+
+  console.log(`OneSignal summary: ${successes.length} succeeded, ${failures.length} failed.`);
+  if (failures.length) console.warn("OneSignal failures:", failures);
+  return { successes, failures };
 };
