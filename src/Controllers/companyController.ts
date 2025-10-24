@@ -8,7 +8,7 @@ import Invitation from "../Models/Invitation";
 import { sendEmail } from "../utils/sendEmail";
 import mongoose, { Types } from "mongoose";
 import Passwords from "../Models/Passwords"; // make sure correct model import ho
-import { sendOneSignalNotification } from "../utils/oneSignalHelper";
+import { sendOneSignalNotification, pruneInvalidPlayerIdsForUser } from "../utils/oneSignalHelper";
 
 
 export const registerCompany = async (
@@ -288,13 +288,18 @@ export const AcceptInvitation = async (req: RequestExtendsInterface, res: Respon
       // ✅ Notify sender on all devices
       const sender = await User.findById(findInvitation.senderID);
       if (sender?.oneSignalPlayerIds?.length) {
-        await sendOneSignalNotification({
+        const result = await sendOneSignalNotification({
           include_player_ids: sender.oneSignalPlayerIds.map(String),
           heading: "Invitation Accepted",
           content: `${user.fullname} accepted your invitation`,
           data: { token, type: "invite_accepted" },
           url: `passure://company/${findCompany._id}`,
         });
+        console.log("OneSignal send result for invitation accepted:", result);
+        if (result && result.failures && result.failures.length) {
+          // prune invalid player ids for the sender
+          await pruneInvalidPlayerIdsForUser(sender._id.toString());
+        }
       }
 
       res.status(200).json({ success: true, message: "Invitation accepted successfully" });
@@ -375,13 +380,17 @@ export const RejectInvitation = async (req: RequestExtendsInterface, res: Respon
     // ✅ Notify sender on all devices
     const sender = await User.findById(invitation.senderID);
     if (sender?.oneSignalPlayerIds?.length) {
-      await sendOneSignalNotification({
+      const result = await sendOneSignalNotification({
         include_player_ids: sender.oneSignalPlayerIds.map(String),
         heading: "Invitation Rejected",
         content: `${user.fullname} rejected your invitation`,
         data: { token, type: "invite_rejected" },
         url: `passure://company/${invitation.companyID}`,
       });
+      console.log("OneSignal send result for invitation rejected:", result);
+      if (result && result.failures && result.failures.length) {
+        await pruneInvalidPlayerIdsForUser(sender._id.toString());
+      }
     }
 
     res.status(200).json({ success: true, message: "Invitation rejected successfully" });
@@ -500,7 +509,7 @@ export const SendInvitation = async (req: RequestExtendsInterface, res: Response
 
     // ✅ Send notification to all of the receiver's devices
     if (checkUser.oneSignalPlayerIds?.length) {
-      await sendOneSignalNotification({
+      const result = await sendOneSignalNotification({
         include_player_ids: checkUser.oneSignalPlayerIds.map(String),
         heading: `Invitation to join ${findCompany.companyName}`,
         content: `${inviter.fullname} invited you to join ${findCompany.companyName}`,
@@ -511,6 +520,10 @@ export const SendInvitation = async (req: RequestExtendsInterface, res: Response
           { id: "reject", text: "Reject" },
         ],
       });
+      console.log("OneSignal send result for send invitation:", result);
+      if (result && result.failures && result.failures.length) {
+        await pruneInvalidPlayerIdsForUser(checkUser._id.toString());
+      }
     }
 
     res.status(200).json({ success: true, message: "Invitation sent successfully" });
